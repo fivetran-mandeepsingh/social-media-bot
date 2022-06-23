@@ -107,7 +107,7 @@ class TwitterClient(object):
 
 
 	def get_tweet_reply(self):
-		return self.tweet_reply_generator.getReply("looking for data pipelinf",Sentiment.NEGATIVE)
+		return self.tweet_reply_generator.getReply("looking to setup data pipeline",Sentiment.NEGATIVE)
 
 def main():
 	# creating object of TwitterClient Class
@@ -156,11 +156,16 @@ class TweetReplyGenerator():
 	'''
 	Class to generate reply for the tweets based on the sentiment of the tweet
 	'''
-	CONNECTORS = ["salesforce","netsuite","zuora","outreach"]
+	CONNECTORS = ["salesforce","google sheet","postgres"]
+	CONNECTORS_DOCUMENTATTION={}
+	CONNECTORS_DOCUMENTATTION["salesforce"]="https://fivetran.com/docs/applications/salesforce"
+	CONNECTORS_DOCUMENTATTION["google sheet"]="https://fivetran.com/docs/files/google-sheets"
+	CONNECTORS_DOCUMENTATTION["postgres"]="https://fivetran.com/docs/databases/postgresql"
 	CUSTOMER_SUPPORT_LINK = "https://support.fivetran.com/hc/en-us"
 	CONNECTORS_COMING_SOON = "https://www.fivetran.com/connectors?status=soon"
 	NEW_CONNECTOR_REQUEST = "https://support.fivetran.com/hc/en-us/community/topics/360001909373-Feature-Requests"
 	FIVETRAN_LINK = "https://www.fivetran.com/"
+	PRICING = "https://www.fivetran.com/pricing"
 
 
 	def __init__(self,short_url_generator):
@@ -175,7 +180,7 @@ class TweetReplyGenerator():
 				return self.getReplyForPositiveTweetWithFivetran()
 
 		else:
-			return self.getReplyForPossibbleOpportunity()
+			return self.getReplyForPossibbleOpportunity(str(tweet))
 
  
 
@@ -183,7 +188,7 @@ class TweetReplyGenerator():
 	def getReplyForNegativeTweetWithFivetran(self,tweet):
 		if(tweet.lower().find("failing")!=-1):
 			return self.getReplyForConnectorFailing(tweet)
-		elif(tweet.lower().find("pricing")!=-1 or tweet.lower().find("expensive")!=-1 or tweet.lower().find("costly")!=-1 or tweet.lower().find("costly")!=-1):
+		elif(tweet.lower().find("pricing")!=-1 or tweet.lower().find("expensive")!=-1 or tweet.lower().find("costly")!=-1 or tweet.lower().find("cost")!=-1):
 			return self.getReplyForPricingIssue()
 		return self.getRelyForConnecToCustomerSupport()
 		
@@ -222,9 +227,21 @@ class TweetReplyGenerator():
 		return reply
 
 
-	def getReplyForPossibbleOpportunity(self):
+	def getReplyForPossibbleOpportunity(self,tweet):
 
-		reply = "We offer the industry's best selction of fully managed connectors, "
+		reply = "We offer the industry's best selection of fully managed connectors, "
+
+		for c in TweetReplyGenerator.CONNECTORS:
+			if(tweet.lower().find(c)!=-1):
+				reply = reply + "Checkout our "+ c+" connector "+self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_DOCUMENTATTION[c])
+				return reply;
+
+		if(tweet.lower().find("pricing")!=-1 or tweet.lower().find("expensive")!=-1 or tweet.lower().find("costly")!=-1 or tweet.lower().find("cost")!=-1):
+			reply = reply + " Checkout our pricing "+self.short_url_generator.get_short_url(TweetReplyGenerator.PRICING)
+			return reply
+
+
+
 		reply =  reply + "Our pipelines automatically and continuously update, freeing you up to focus on game-changing insighta instead of ETL. Check out our product "
 		reply += self.short_url_generator.get_short_url( TweetReplyGenerator.FIVETRAN_LINK)
 		return reply
