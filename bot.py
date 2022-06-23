@@ -13,21 +13,10 @@ class TwitterClient(object):
 	'''
 	Generic Twitter Class for sentiment analysis.
 	'''
-	def __init__(self):
+	def __init__(self, consumer_key, consumer_secret, access_token, access_token_secret):
 		'''
 		Class constructor or initialization method.
 		'''
-		filepath = os.path.expanduser('~/creds.txt')
-		
-		with open(filepath) as f:
-			# keys and tokens from the Twitter Dev Console
-			data = json.load(f)
-			consumer_key = data['consumer_key']
-			consumer_secret = data['consumer_secret']
-			access_token = data['access_token']
-			access_token_secret = data['access_token_secret']
-			url_generator_access_token = data['url_generator_access_token']
-
 		# attempt authentication
 		try:
 			# create OAuthHandler object
@@ -38,13 +27,6 @@ class TwitterClient(object):
 			self.api = tweepy.API(self.auth)
 		except Exception as e:
 			print("Exception occured while Authenticating Twitter api. Error: " + str(e))
-
-		try:
-			# create object for url generation
-			self.url_generator = ShortUrlGenerator(url_generator_access_token)
-			self.tweet_reply_generator = TweetReplyGenerator(self.url_generator)
-		except Exception as e:
-			print("Exception occured while Authenticating Bitly. Error: " + str(e))
 		
 		self.model = pipeline(model="finiteautomata/bertweet-base-sentiment-analysis")
 
@@ -101,6 +83,7 @@ class TwitterClient(object):
 			parsed_tweet['text'] = tweet.full_text
 			# saving sentiment of tweet
 			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.full_text)
+			parsed_tweet['id'] = tweet.id
 
 			# appending parsed tweet to tweets list
 			if tweet.retweet_count > 0:
@@ -115,20 +98,37 @@ class TwitterClient(object):
 
 	def reply_to_tweet(self, tweet_id, reply_text):
 		try:
-			response = self.api.update_status(status = reply_text, in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
+			print("Mock response: " + reply_text)
+			# response = self.api.update_status(status = reply_text, in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
 		except Exception as e:
 			print("Exception while replying to tweet. Error: " + str(e))
 			raise e
 
-	def get_tweet_reply(self):
-		return self.tweet_reply_generator.getReply("looking to setup data pipeline",Sentiment.NEGATIVE)
-
 def main():
-	# creating object of TwitterClient Class
-	api = TwitterClient()
-	# calling function to get tweets
-	tweets = api.get_tweets(query = 'Fivetran', count = 20)
+	# read creds
+	filepath = os.path.expanduser('~/creds.txt')
+	
+	with open(filepath) as f:
+		# keys and tokens from the Twitter Dev Console
+		data = json.load(f)
+		consumer_key = data['consumer_key']
+		consumer_secret = data['consumer_secret']
+		access_token = data['access_token']
+		access_token_secret = data['access_token_secret']
+		url_generator_access_token = data['url_generator_access_token']
 
+	# creating object of TwitterClient Class
+	api = TwitterClient(consumer_key, consumer_secret, access_token, access_token_secret)
+	# calling function to get tweets
+	# tweets = api.get_tweets(query = 'Fivetran OR (Extract Transform Load) OR (Extract  Load Transform) OR (data pipeline)', count = 10)
+	tweets = api.get_tweets(query = '#LoadDataIntoDataWarehouse', count = 10)
+
+	try:
+		# create object for url generation
+		tweet_reply_generator = TweetReplyGenerator(ShortUrlGenerator(url_generator_access_token))
+	except Exception as e:
+		print("Exception occured while Authenticating Bitly. Error: " + str(e))
+	
 	# picking positive tweets from tweets
 	ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
 	# percentage of positive tweets
@@ -147,18 +147,22 @@ def main():
 	print("\n\nPositive tweets:")
 	for index, tweet in enumerate(ptweets):
 		print(str(index+1) + ". " + tweet['text'])
+		reply = tweet_reply_generator.getReply(tweet['text'], Sentiment.POSITIVE)
+		api.reply_to_tweet(tweet['id'], reply)
 
 	# printing all negative tweets
 	print("\n\nNegative tweets:")
 	for index, tweet in enumerate(ntweets):
 		print(str(index+1) + ". " + tweet['text'])
+		reply = tweet_reply_generator.getReply(tweet['text'], Sentiment.NEGATIVE)
+		api.reply_to_tweet(tweet['id'], reply)
 
 	# printing all neutral tweets
 	print("\n\nNeutral tweets:")
 	for index, tweet in enumerate(neutweets):
 		print(str(index+1) + ". " + tweet['text'])
-
-	print(api.get_tweet_reply())
+		reply = tweet_reply_generator.getReply(tweet['text'], Sentiment.NEUTRAL)
+		api.reply_to_tweet(tweet['id'], reply)
 
 class Sentiment(enum.Enum):
 	POSITIVE = 1
@@ -179,7 +183,6 @@ class TweetReplyGenerator():
 	NEW_CONNECTOR_REQUEST = "https://support.fivetran.com/hc/en-us/community/topics/360001909373-Feature-Requests"
 	FIVETRAN_LINK = "https://www.fivetran.com/"
 	PRICING = "https://www.fivetran.com/pricing"
-
 
 	def __init__(self,short_url_generator):
 		self.short_url_generator = short_url_generator
@@ -235,7 +238,7 @@ class TweetReplyGenerator():
 			reply = reply + " Checkout our pricing "+self.short_url_generator.get_short_url(TweetReplyGenerator.PRICING)
 			return reply
 		reply =  reply + "Our pipelines automatically and continuously update, freeing you up to focus on game-changing insighta instead of ETL. Check out our product "
-		reply += self.short_url_generator.get_short_url( TweetReplyGenerator.FIVETRAN_LINK)
+		reply += self.short_url_generator.get_short_url(TweetReplyGenerator.FIVETRAN_LINK)
 		return reply
 
 
@@ -254,6 +257,7 @@ class ShortUrlGenerator(object):
 		data = '{ "long_url": "%(long_url)s"}' % { "long_url":long_url }
 
 		# response = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data)
+		# print("Short url generated: " + str(response.json()['link']))
 		# return response.json()['link']
 		return "https://bit.ly/3HJ6HB6"
 
