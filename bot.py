@@ -1,8 +1,10 @@
 import re
 import json
+import os
 import tweepy
 from tweepy import OAuthHandler
 from textblob import TextBlob
+import requests
 
 class TwitterClient(object):
 	'''
@@ -12,7 +14,7 @@ class TwitterClient(object):
 		'''
 		Class constructor or initialization method.
 		'''
-		filepath = 'creds.txt'
+		filepath = os.path.expanduser('~/creds.txt')
 		
 		with open(filepath) as f:
 			# keys and tokens from the Twitter Dev Console
@@ -21,6 +23,7 @@ class TwitterClient(object):
 			consumer_secret = data['consumer_secret']
 			access_token = data['access_token']
 			access_token_secret = data['access_token_secret']
+			url_generator_access_token = data['url_generator_access_token']
 
 		# attempt authentication
 		try:
@@ -95,36 +98,71 @@ def main():
 	# creating object of TwitterClient Class
 	api = TwitterClient()
 	# calling function to get tweets
-	tweets = api.get_tweets(query = 'Narendra Modi', count = 50)
+	# tweets = api.get_tweets(query = 'Narendra Modi', count = 50)
 
-	# picking positive tweets from tweets
-	ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
-	# percentage of positive tweets
-	print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
-	# picking negative tweets from tweets
-	ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
-	# percentage of negative tweets
-	print("Negative tweets percentage: {} %".format(100*len(ntweets)/len(tweets)))
-	# picking neutral tweets from tweets
-	neutweets = [tweet for tweet in tweets if tweet['sentiment'] == 'neutral']
-	# percentage of neutral tweets
-	print("Neutral tweets percentage: {} % \
-		".format(100*len(neutweets)/len(tweets)))
+	# # picking positive tweets from tweets
+	# ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
+	# # percentage of positive tweets
+	# print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
+	# # picking negative tweets from tweets
+	# ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
+	# # percentage of negative tweets
+	# print("Negative tweets percentage: {} %".format(100*len(ntweets)/len(tweets)))
+	# # picking neutral tweets from tweets
+	# neutweets = [tweet for tweet in tweets if tweet['sentiment'] == 'neutral']
+	# # percentage of neutral tweets
+	# print("Neutral tweets percentage: {} % \
+	# 	".format(100*len(neutweets)/len(tweets)))
 
-	# printing all positive tweets
-	print("\n\nPositive tweets:")
-	for index, tweet in enumerate(ptweets):
-		print(str(index+1) + ". " + tweet['text'])
+	# # printing all positive tweets
+	# print("\n\nPositive tweets:")
+	# for index, tweet in enumerate(ptweets):
+	# 	print(str(index+1) + ". " + tweet['text'])
 
-	# printing all negative tweets
-	print("\n\nNegative tweets:")
-	for index, tweet in enumerate(ntweets):
-		print(str(index+1) + ". " + tweet['text'])
+	# # printing all negative tweets
+	# print("\n\nNegative tweets:")
+	# for index, tweet in enumerate(ntweets):
+	# 	print(str(index+1) + ". " + tweet['text'])
 
-	# printing all neutral tweets
-	print("\n\nNeutral tweets:")
-	for index, tweet in enumerate(neutweets):
-		print(str(index+1) + ". " + tweet['text'])
+	# # printing all neutral tweets
+	# print("\n\nNeutral tweets:")
+	# for index, tweet in enumerate(neutweets):
+	# 	print(str(index+1) + ". " + tweet['text'])
+
+class ShortUrlGenerator(object):
+	'''
+	Class to create and return short URLs for long URLs
+	'''
+	def __init__(self, access_token):
+		self.access_token = access_token
+	
+	def get_short_url(long_url):
+		headers = {
+			'Authorization': 'Bearer {self.access_token}',
+			'Content-Type': 'application/json',
+		}
+		data = '{ "long_url": "{long_url}"}'
+
+		response = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data)
+		return response
+
+class ShortUrlGenerator(object):
+	'''
+	Class to create and return short URLs for long URLs
+	'''
+	def __init__(self, access_token):
+		self.access_token = access_token
+	
+	def get_short_url(self, long_url):
+		headers = {
+			'Authorization': 'Bearer %(access_token)s' % { "access_token": self.access_token },
+			'Content-Type': 'application/json',
+		}
+		data = '{ "long_url": "%(long_url)s"}' % { "long_url":long_url }
+
+		# response = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data)
+		# return response.json()['link']
+		return "https://bit.ly/3HJ6HB6"
 
 if __name__ == "__main__":
 	# calling main function
