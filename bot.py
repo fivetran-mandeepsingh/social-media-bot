@@ -73,7 +73,6 @@ class TwitterClient(object):
                        lang='en',
                        result_type='recent').items(count))
 
-
 		# parsing tweets one by one
 		for tweet in fetched_tweets:
 			# empty dictionary to store required params of a tweet
@@ -205,9 +204,9 @@ class TweetReplyGenerator():
 		return self.getRelyForConnecToCustomerSupport()
 		
 	def getReplyForPositiveTweetWithFivetran(self):
-		reply =  "Glad to hear you enjoyed our product, check out new connectors coming soon "
+		reply =  "Glad to know that you enjoyed using Fivetran. You can check out the new connectors that we are building here: "
 		reply += self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_COMING_SOON)
-		reply += ", request for connectors here "+ self.short_url_generator.get_short_url(TweetReplyGenerator.NEW_CONNECTOR_REQUEST)
+		reply += " You can also submit request for a new connector here: " + self.short_url_generator.get_short_url(TweetReplyGenerator.NEW_CONNECTOR_REQUEST)
 		return reply
 
 	def getReplyForPricingIssue(self):
@@ -229,7 +228,7 @@ class TweetReplyGenerator():
 		return reply
 
 	def getReplyForPossibbleOpportunity(self,tweet):
-		reply = "We offer the industry's best selection of fully managed connectors, "
+		reply = "Fivetran provides an ELT data pipeline using which you can centralize your data in minutes not months. "
 		for c in TweetReplyGenerator.CONNECTORS:
 			if(tweet.lower().find(c)!=-1):
 				reply = reply + "Checkout our "+ c+" connector "+self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_DOCUMENTATTION[c])
