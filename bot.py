@@ -1,10 +1,12 @@
 import re
 import json
 import os
+import string
 import tweepy
 from tweepy import OAuthHandler
 from textblob import TextBlob
 import requests
+import enum
 
 class TwitterClient(object):
 	'''
@@ -35,6 +37,7 @@ class TwitterClient(object):
 			self.api = tweepy.API(self.auth)
 			# create object for url generation
 			self.url_generator = ShortUrlGenerator(url_generator_access_token)
+			self.tweet_reply_generator = TweetReplyGenerator(self.url_generator)
 		except:
 			print("Error: Authentication Failed")
 
@@ -96,6 +99,10 @@ class TwitterClient(object):
 			# print error (if any)
 			print("Error : " + str(e))
 
+
+	def get_tweet_reply(self):
+		return self.tweet_reply_generator.getReply("looking for data pipelinf",Sentiment.NEGATIVE)
+
 def main():
 	# creating object of TwitterClient Class
 	api = TwitterClient()
@@ -130,6 +137,92 @@ def main():
 	print("\n\nNeutral tweets:")
 	for index, tweet in enumerate(neutweets):
 		print(str(index+1) + ". " + tweet['text'])
+
+
+	print(api.get_tweet_reply())
+
+class Sentiment(enum.Enum):
+	POSITIVE = 1
+	NEGATIVE = -1
+	NEUTRAL = 0
+
+class TweetReplyGenerator():
+	'''
+	Class to generate reply for the tweets based on the sentiment of the tweet
+	'''
+	CONNECTORS = ["salesforce","netsuite","zuora","outreach"]
+	CUSTOMER_SUPPORT_LINK = "https://support.fivetran.com/hc/en-us"
+	CONNECTORS_COMING_SOON = "https://www.fivetran.com/connectors?status=soon"
+	NEW_CONNECTOR_REQUEST = "https://support.fivetran.com/hc/en-us/community/topics/360001909373-Feature-Requests"
+	FIVETRAN_LINK = "https://www.fivetran.com/"
+
+
+	def __init__(self,short_url_generator):
+		self.short_url_generator = short_url_generator
+
+
+	def getReply(self,tweet,sentiment):
+		if(str(tweet).lower().find("fivetran")!=-1):
+			if Sentiment.NEGATIVE == sentiment or Sentiment.NEUTRAL == sentiment:
+				return self.getReplyForNegativeTweetWithFivetran(str(tweet))
+			else:
+				return self.getReplyForPositiveTweetWithFivetran()
+
+		else:
+			return self.getReplyForPossibbleOpportunity()
+
+ 
+
+
+	def getReplyForNegativeTweetWithFivetran(self,tweet):
+		if(tweet.lower().find("failing")!=-1):
+			return self.getReplyForConnectorFailing(tweet)
+		elif(tweet.lower().find("pricing")!=-1 or tweet.lower().find("expensive")!=-1 or tweet.lower().find("costly")!=-1 or tweet.lower().find("costly")!=-1):
+			return self.getReplyForPricingIssue()
+		return self.getRelyForConnecToCustomerSupport()
+		
+
+	def getReplyForPositiveTweetWithFivetran(self):
+
+		reply =  "Glad to hear you enjoyed our product, check out new connectors coming soon "
+		reply += self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_COMING_SOON)
+		reply += ", request for connectors here "+ self.short_url_generator.get_short_url(TweetReplyGenerator.NEW_CONNECTOR_REQUEST)
+
+		return reply
+
+	def getReplyForPricingIssue(self):
+		txt = "Sorry for the inconvenience you faced with our with our pricing model, "
+		return txt+ self.getRelyForConnecToCustomerSupport()
+
+
+	def getReplyForConnectorFailing(self,tweet):
+
+		txt = "Sorry for the inconvenience you faced with our{connector:s} connector, "
+		connector = ""
+
+		for c in TweetReplyGenerator.CONNECTORS:
+			if(str(tweet).find(c)!=-1):
+				connector=" "+c
+				break
+
+		return txt.format(connector=connector)+ self.getRelyForConnecToCustomerSupport()
+
+
+
+
+	def getRelyForConnecToCustomerSupport(self):
+		reply = "Please connect with out customer support for the resolution "
+		reply = reply + self.short_url_generator.get_short_url(self.CUSTOMER_SUPPORT_LINK)
+		return reply
+
+
+	def getReplyForPossibbleOpportunity(self):
+
+		reply = "We offer the industry's best selction of fully managed connectors, "
+		reply =  reply + "Our pipelines automatically and continuously update, freeing you up to focus on game-changing insighta instead of ETL. Check out our product "
+		reply += self.short_url_generator.get_short_url( TweetReplyGenerator.FIVETRAN_LINK)
+		return reply
+
 
 class ShortUrlGenerator(object):
 	'''
