@@ -35,11 +35,15 @@ class TwitterClient(object):
 			self.auth.set_access_token(access_token, access_token_secret)
 			# create tweepy API object to fetch tweets
 			self.api = tweepy.API(self.auth)
+		except Exception as e:
+			print("Exception occured while Authenticating Twitter api. Error: " + str(e))
+
+		try:
 			# create object for url generation
 			self.url_generator = ShortUrlGenerator(url_generator_access_token)
 			self.tweet_reply_generator = TweetReplyGenerator(self.url_generator)
-		except:
-			print("Error: Authentication Failed")
+		except Exception as e:
+			print("Exception occured while Authenticating Bitly. Error: " + str(e))
 
 	def clean_tweet(self, tweet):
 		'''
@@ -69,35 +73,37 @@ class TwitterClient(object):
 		'''
 		# empty list to store parsed tweets
 		tweets = []
+		# call twitter api to fetch tweets
+		fetched_tweets = self.api.search_tweets(q = query, count = count)
 
-		try:
-			# call twitter api to fetch tweets
-			fetched_tweets = self.api.search_tweets(q = query, count = count)
+		# parsing tweets one by one
+		for tweet in fetched_tweets:
+			# empty dictionary to store required params of a tweet
+			parsed_tweet = {}
 
-			# parsing tweets one by one
-			for tweet in fetched_tweets:
-				# empty dictionary to store required params of a tweet
-				parsed_tweet = {}
+			# saving text of tweet
+			parsed_tweet['text'] = tweet.text
+			# saving sentiment of tweet
+			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.text)
 
-				# saving text of tweet
-				parsed_tweet['text'] = tweet.text
-				# saving sentiment of tweet
-				parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.text)
-
-				# appending parsed tweet to tweets list
-				if tweet.retweet_count > 0:
-					# if tweet has retweets, ensure that it is appended only once
-					if parsed_tweet not in tweets:
-						tweets.append(parsed_tweet)
-				else:
+			# appending parsed tweet to tweets list
+			if tweet.retweet_count > 0:
+				# if tweet has retweets, ensure that it is appended only once
+				if parsed_tweet not in tweets:
 					tweets.append(parsed_tweet)
+			else:
+				tweets.append(parsed_tweet)
 
-			# return parsed tweets
-			return tweets
+		# return parsed tweets
+		return tweets
 
-		except tweepy.TweepError as e:
-			# print error (if any)
-			print("Error : " + str(e))
+	def reply_to_tweet(self, tweet_id, reply_text):
+		try:
+			response = self.api.update_status(status = reply_text, in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
+		except Exception as e:
+			print("Exception while replying to tweet. Error: " + str(e))
+			raise e
+
 
 
 	def get_tweet_reply(self):
@@ -107,7 +113,7 @@ def main():
 	# creating object of TwitterClient Class
 	api = TwitterClient()
 	# calling function to get tweets
-	tweets = api.get_tweets(query = 'Narendra Modi', count = 50)
+	tweets = api.get_tweets(query = '#LoadDataIntoDataWarehouse', count = 20)
 
 	# picking positive tweets from tweets
 	ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
@@ -231,23 +237,6 @@ class ShortUrlGenerator(object):
 	def __init__(self, access_token):
 		self.access_token = access_token
 	
-	def get_short_url(long_url):
-		headers = {
-			'Authorization': 'Bearer {self.access_token}',
-			'Content-Type': 'application/json',
-		}
-		data = '{ "long_url": "{long_url}"}'
-
-		response = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data)
-		return response
-
-class ShortUrlGenerator(object):
-	'''
-	Class to create and return short URLs for long URLs
-	'''
-	def __init__(self, access_token):
-		self.access_token = access_token
-	
 	def get_short_url(self, long_url):
 		headers = {
 			'Authorization': 'Bearer %(access_token)s' % { "access_token": self.access_token },
@@ -262,3 +251,5 @@ class ShortUrlGenerator(object):
 if __name__ == "__main__":
 	# calling main function
 	main()
+	# api = TwitterClient()
+	# tweets = api.reply_to_tweet(1539954418820362241, "Try out Fivetran with a 14 days free Trail account!")
