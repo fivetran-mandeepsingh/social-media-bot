@@ -67,11 +67,20 @@ class TwitterClient(object):
 		tweets = []
 		# call twitter api to fetch tweets
 		# fetched_tweets = self.api.search_tweets(q = query, count = count)
-		fetched_tweets = self.limit_handled(tweepy.Cursor(self.api.search_tweets,
-                       q=query,
-                       tweet_mode='extended',
-                       lang='en',
-                       result_type='recent').items(count))
+		# fetched_tweets = self.limit_handled(tweepy.Cursor(self.api.search_tweets,
+        #                q=query,
+        #                tweet_mode='extended',
+        #                lang='en',
+        #                result_type='recent').items(count))
+
+		fetched_tweets = [
+			"I love how easy to setup fivetran's connectors are",
+			"Can anyone help me find how to send my salesforce data into a data warehouse for further analysis",
+			"I hate Fivetran's pricing structure",
+			"Is there a cheap way to send my data to data warehouse for analysis",
+            "Fivetran's postgres connector keeps failing i don't know why",
+            "How to do data analysis on my google sheet data? Any idea?"
+        ]
 
 		# parsing tweets one by one
 		for tweet in fetched_tweets:
@@ -79,13 +88,13 @@ class TwitterClient(object):
 			parsed_tweet = {}
 
 			# saving text of tweet
-			parsed_tweet['text'] = tweet.full_text
+			parsed_tweet['text'] = tweet
 			# saving sentiment of tweet
-			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.full_text)
-			parsed_tweet['id'] = tweet.id
+			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)
+			parsed_tweet['id'] = 1
 
 			# appending parsed tweet to tweets list
-			if tweet.retweet_count > 0:
+			if False:
 				# if tweet has retweets, ensure that it is appended only once
 				if parsed_tweet not in tweets:
 					tweets.append(parsed_tweet)
@@ -206,11 +215,11 @@ class TweetReplyGenerator():
 	def getReplyForPositiveTweetWithFivetran(self):
 		reply =  "Glad to know that you enjoyed using Fivetran. You can check out the new connectors that we are building here: "
 		reply += self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_COMING_SOON)
-		reply += " You can also submit request for a new connector here: " + self.short_url_generator.get_short_url(TweetReplyGenerator.NEW_CONNECTOR_REQUEST)
+		reply += ". You can also submit request for a new connector here: " + self.short_url_generator.get_short_url(TweetReplyGenerator.NEW_CONNECTOR_REQUEST)
 		return reply
 
 	def getReplyForPricingIssue(self):
-		txt = "Sorry for the inconvenience you faced with our with our pricing model, "
+		txt = "Sorry for the inconvenience you faced with with our pricing model. "
 		return txt+ self.getRelyForConnecToCustomerSupport()
 
 	def getReplyForConnectorFailing(self,tweet):
@@ -223,15 +232,14 @@ class TweetReplyGenerator():
 		return txt.format(connector=connector)+ self.getRelyForConnecToCustomerSupport()
 
 	def getRelyForConnecToCustomerSupport(self):
-		reply = "Please connect with out customer support for the resolution "
-		reply = reply + self.short_url_generator.get_short_url(self.CUSTOMER_SUPPORT_LINK)
+		reply = "Please connect with our customer support at support@fivetran.com for quick resolution."
 		return reply
 
 	def getReplyForPossibbleOpportunity(self,tweet):
-		reply = "Fivetran provides an ELT data pipeline using which you can centralize your data in minutes not months. "
+		reply = "Fivetran provides a fast, secure and easy to setup data pipeline which helps you centralize your data in minutes. "
 		for c in TweetReplyGenerator.CONNECTORS:
 			if(tweet.lower().find(c)!=-1):
-				reply = reply + "Checkout our "+ c+" connector "+self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_DOCUMENTATTION[c])
+				reply = reply + "You can checkout our "+ c+" connector "+self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_DOCUMENTATTION[c])
 				return reply;
 		if(tweet.lower().find("pricing")!=-1 or tweet.lower().find("expensive")!=-1 or tweet.lower().find("costly")!=-1 or tweet.lower().find("cost")!=-1):
 			reply = reply + " Checkout our pricing "+self.short_url_generator.get_short_url(TweetReplyGenerator.PRICING)
