@@ -33,6 +33,8 @@ class TwitterClient(object):
 			self.auth.set_access_token(access_token, access_token_secret)
 			# create tweepy API object to fetch tweets
 			self.api = tweepy.API(self.auth)
+			# create object for url generation
+			self.url_generator = ShortUrlGenerator(url_generator_access_token)
 		except:
 			print("Error: Authentication Failed")
 
@@ -98,36 +100,36 @@ def main():
 	# creating object of TwitterClient Class
 	api = TwitterClient()
 	# calling function to get tweets
-	# tweets = api.get_tweets(query = 'Narendra Modi', count = 50)
+	tweets = api.get_tweets(query = 'Narendra Modi', count = 50)
 
-	# # picking positive tweets from tweets
-	# ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
-	# # percentage of positive tweets
-	# print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
-	# # picking negative tweets from tweets
-	# ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
-	# # percentage of negative tweets
-	# print("Negative tweets percentage: {} %".format(100*len(ntweets)/len(tweets)))
-	# # picking neutral tweets from tweets
-	# neutweets = [tweet for tweet in tweets if tweet['sentiment'] == 'neutral']
-	# # percentage of neutral tweets
-	# print("Neutral tweets percentage: {} % \
-	# 	".format(100*len(neutweets)/len(tweets)))
+	# picking positive tweets from tweets
+	ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
+	# percentage of positive tweets
+	print("Positive tweets percentage: {} %".format(100*len(ptweets)/len(tweets)))
+	# picking negative tweets from tweets
+	ntweets = [tweet for tweet in tweets if tweet['sentiment'] == 'negative']
+	# percentage of negative tweets
+	print("Negative tweets percentage: {} %".format(100*len(ntweets)/len(tweets)))
+	# picking neutral tweets from tweets
+	neutweets = [tweet for tweet in tweets if tweet['sentiment'] == 'neutral']
+	# percentage of neutral tweets
+	print("Neutral tweets percentage: {} % \
+		".format(100*len(neutweets)/len(tweets)))
 
-	# # printing all positive tweets
-	# print("\n\nPositive tweets:")
-	# for index, tweet in enumerate(ptweets):
-	# 	print(str(index+1) + ". " + tweet['text'])
+	# printing all positive tweets
+	print("\n\nPositive tweets:")
+	for index, tweet in enumerate(ptweets):
+		print(str(index+1) + ". " + tweet['text'])
 
-	# # printing all negative tweets
-	# print("\n\nNegative tweets:")
-	# for index, tweet in enumerate(ntweets):
-	# 	print(str(index+1) + ". " + tweet['text'])
+	# printing all negative tweets
+	print("\n\nNegative tweets:")
+	for index, tweet in enumerate(ntweets):
+		print(str(index+1) + ". " + tweet['text'])
 
-	# # printing all neutral tweets
-	# print("\n\nNeutral tweets:")
-	# for index, tweet in enumerate(neutweets):
-	# 	print(str(index+1) + ". " + tweet['text'])
+	# printing all neutral tweets
+	print("\n\nNeutral tweets:")
+	for index, tweet in enumerate(neutweets):
+		print(str(index+1) + ". " + tweet['text'])
 
 class ShortUrlGenerator(object):
 	'''
