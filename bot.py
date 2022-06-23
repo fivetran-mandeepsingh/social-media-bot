@@ -138,23 +138,6 @@ class ShortUrlGenerator(object):
 	def __init__(self, access_token):
 		self.access_token = access_token
 	
-	def get_short_url(long_url):
-		headers = {
-			'Authorization': 'Bearer {self.access_token}',
-			'Content-Type': 'application/json',
-		}
-		data = '{ "long_url": "{long_url}"}'
-
-		response = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data)
-		return response
-
-class ShortUrlGenerator(object):
-	'''
-	Class to create and return short URLs for long URLs
-	'''
-	def __init__(self, access_token):
-		self.access_token = access_token
-	
 	def get_short_url(self, long_url):
 		headers = {
 			'Authorization': 'Bearer %(access_token)s' % { "access_token": self.access_token },
