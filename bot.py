@@ -65,22 +65,21 @@ class TwitterClient(object):
 		'''
 		# empty list to store parsed tweets
 		tweets = []
-		# call twitter api to fetch tweets
-		# fetched_tweets = self.api.search_tweets(q = query, count = count)
-		# fetched_tweets = self.limit_handled(tweepy.Cursor(self.api.search_tweets,
-        #                q=query,
-        #                tweet_mode='extended',
-        #                lang='en',
-        #                result_type='recent').items(count))
 
 		fetched_tweets = [
 			"I love how easy to setup fivetran's connectors are",
 			"Can anyone help me find how to send my salesforce data into a data warehouse for further analysis",
 			"I hate Fivetran's pricing structure",
 			"Is there a cheap way to send my data to data warehouse for analysis",
-            "Fivetran's postgres connector keeps failing i don't know why",
-            "How to do data analysis on my google sheet data? Any idea?"
-        ]
+			"Fivetran's postgres connector keeps failing i don't know why",
+			"How to do data analysis on my google sheet data? Any idea?"
+		]																						# comment this and uncomment below line for actual run
+		# call twitter api to fetch tweets
+		# fetched_tweets = self.limit_handled(tweepy.Cursor(self.api.search_tweets,
+		#		q=query,
+		#		tweet_mode='extended',
+		#		lang='en',
+		#		result_type='recent').items(count))
 
 		# parsing tweets one by one
 		for tweet in fetched_tweets:
@@ -88,13 +87,17 @@ class TwitterClient(object):
 			parsed_tweet = {}
 
 			# saving text of tweet
-			parsed_tweet['text'] = tweet
+			parsed_tweet['text'] = tweet														# comment this and uncomment below line for actual run				
+			# parsed_tweet['text'] = tweet.full_text
 			# saving sentiment of tweet
-			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)
-			parsed_tweet['id'] = 1
+			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)							# comment this and uncomment below line for actual run
+			# parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.full_text)
+			parsed_tweet['id'] = 1																# comment this and uncomment below line for actual run
+			# parsed_tweet['id'] = tweet.id
 
 			# appending parsed tweet to tweets list
 			if False:
+			# if tweet.retweet_count > 0:
 				# if tweet has retweets, ensure that it is appended only once
 				if parsed_tweet not in tweets:
 					tweets.append(parsed_tweet)
