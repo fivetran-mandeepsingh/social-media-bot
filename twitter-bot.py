@@ -9,6 +9,10 @@ import requests
 import enum
 from transformers import pipeline
 
+# change below settings for actual run
+should_post_reply_on_tweet = False
+should_use_dummy_short_url = True
+
 class TwitterClient(object):
 	'''
 	Generic Twitter Class for sentiment analysis.
@@ -66,34 +70,38 @@ class TwitterClient(object):
 		# empty list to store parsed tweets
 		tweets = []
 
-		fetched_tweets = [
-			"I love how easy to setup fivetran's connectors are",
-			"Can anyone help me find how to send my salesforce data into a data warehouse for further analysis",
-			"I hate Fivetran's pricing structure",
-			"Is there a cheap way to send my data to data warehouse for analysis",
-			"Fivetran's postgres connector keeps failing i don't know why",
-			"How to do data analysis on my google sheet data? Any idea?"
-		]																						# comment this and uncomment below line for actual run
+		# fetched_tweets = [
+		# 	"I love how easy to setup fivetran's connectors are",
+		# 	"Can anyone help me find how to send my salesforce data into a data warehouse for further analysis",
+		# 	"I hate Fivetran's pricing structure",
+		# 	"Is there a cheap way to send my data to data warehouse for analysis",
+		# 	"Fivetran's postgres connector keeps failing i don't know why",
+		# 	"How to do data analysis on my google sheet data? Any idea?"
+		# ]																						# comment this and uncomment below line for actual run
 		# call twitter api to fetch tweets
-		# fetched_tweets = self.limit_handled(tweepy.Cursor(self.api.search_tweets,
-		#		q=query,
-		#		tweet_mode='extended',
-		#		lang='en',
-		#		result_type='recent').items(count))
+		fetched_tweets = self.limit_handled(tweepy.Cursor(self.api.search_tweets,
+				q=query,
+				tweet_mode='extended',
+				lang='en',
+				result_type='recent').items(count))
 
 		# parsing tweets one by one
 		for tweet in fetched_tweets:
+			# this is to ensure we only reply to the tweets posted by our test account.
+			if tweet.user.id != 1539534310281478144:
+				continue
+
 			# empty dictionary to store required params of a tweet
 			parsed_tweet = {}
 
 			# saving text of tweet
-			parsed_tweet['text'] = tweet														# comment this and uncomment below line for actual run				
-			# parsed_tweet['text'] = tweet.full_text
+			# parsed_tweet['text'] = tweet														# comment this and uncomment below line for actual run				
+			parsed_tweet['text'] = tweet.full_text
 			# saving sentiment of tweet
-			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)							# comment this and uncomment below line for actual run
-			# parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.full_text)
-			parsed_tweet['id'] = 1																# comment this and uncomment below line for actual run
-			# parsed_tweet['id'] = tweet.id
+			# parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)							# comment this and uncomment below line for actual run
+			parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.full_text)
+			# parsed_tweet['id'] = 1																# comment this and uncomment below line for actual run
+			parsed_tweet['id'] = tweet.id
 
 			# appending parsed tweet to tweets list
 			if False:
@@ -109,8 +117,9 @@ class TwitterClient(object):
 
 	def reply_to_tweet(self, tweet_id, reply_text):
 		try:
-			print("Mock response: " + reply_text)
-			# response = self.api.update_status(status = reply_text, in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
+			print("Response: " + reply_text)
+			if should_post_reply_on_tweet:
+				self.api.update_status(status = reply_text, in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
 		except Exception as e:
 			print("Exception while replying to tweet. Error: " + str(e))
 			raise e
@@ -131,8 +140,8 @@ def main():
 	# creating object of TwitterClient Class
 	api = TwitterClient(consumer_key, consumer_secret, access_token, access_token_secret)
 	# calling function to get tweets
-	# tweets = api.get_tweets(query = 'Fivetran OR (Extract Transform Load) OR (Extract  Load Transform) OR (data pipeline)', count = 10)
-	tweets = api.get_tweets(query = '#LoadDataIntoDataWarehouse', count = 10)
+	tweets = api.get_tweets(query = 'Fivetran OR (data pipeline)', count = 100)
+	# tweets = api.get_tweets(query = '#LoadDataIntoDataWarehouse', count = 10)
 
 	try:
 		# create object for url generation
@@ -239,18 +248,18 @@ class TweetReplyGenerator():
 		return reply
 
 	def getReplyForPossibbleOpportunity(self,tweet):
-		reply = "Fivetran provides a fast, secure and easy to setup data pipeline which helps you centralize your data in minutes. "
+		reply = "Hey there! Did you know Fivetran provides a fast, secure and easy to setup data pipeline which helps you centralize your data within minutes. "
 		for c in TweetReplyGenerator.CONNECTORS:
 			if(tweet.lower().find(c)!=-1):
-				reply = reply + "You can checkout our "+ c+" connector "+self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_DOCUMENTATTION[c])
+				reply = reply + "Fivetran also supports moving data from your "+ c+" connector to data warehouse. Find more details here: "+self.short_url_generator.get_short_url(TweetReplyGenerator.CONNECTORS_DOCUMENTATTION[c])
 				return reply;
 		if(tweet.lower().find("pricing")!=-1 or tweet.lower().find("expensive")!=-1 or tweet.lower().find("costly")!=-1 or tweet.lower().find("cost")!=-1):
-			reply = reply + " Checkout our pricing "+self.short_url_generator.get_short_url(TweetReplyGenerator.PRICING)
+			reply = reply + "Checkout our Fivetran's pricing here: "+self.short_url_generator.get_short_url(TweetReplyGenerator.PRICING)
 			return reply
-		reply =  reply + "Our pipelines automatically and continuously update, freeing you up to focus on game-changing insighta instead of ETL. Check out our product "
+		reply =  reply + "Our pipelines automatically and continuously update, freeing you up to focus on game-changing insights instead of ETL. Check out our product here: "
 		reply += self.short_url_generator.get_short_url(TweetReplyGenerator.FIVETRAN_LINK)
 		return reply
-
+a = True
 
 class ShortUrlGenerator(object):
 	'''
@@ -266,13 +275,12 @@ class ShortUrlGenerator(object):
 		}
 		data = '{ "long_url": "%(long_url)s"}' % { "long_url":long_url }
 
-		# response = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data)
-		# print("Short url generated: " + str(response.json()['link']))
-		# return response.json()['link']
-		return "https://bit.ly/3HJ6HB6"
+		if should_use_dummy_short_url:
+			shortUrl = "https://bit.ly/3HJ6HB6"
+		else:
+			shortUrl = requests.post('https://api-ssl.bitly.com/v4/shorten', headers=headers, data=data).json()['link']
+		return shortUrl
 
 if __name__ == "__main__":
 	# calling main function
 	main()
-	# api = TwitterClient()
-	# tweets = api.reply_to_tweet(1539954418820362241, "Try out Fivetran with a 14 days free Trail account!")
